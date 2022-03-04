@@ -13,7 +13,7 @@ DEFAULT_GOARCH := $(shell go env GOARCH)
 BUILD_HASH = $(shell git rev-parse HEAD)
 LDFLAGS += -X "main.buildHash=$(BUILD_HASH)"
 LDFLAGS+= -X "main.isDebug=$(MM_DEBUG)"
-LDFLAGS += -X "main.rudderWriteKey=$(RUDDER_WRITE_KEY)"
+LDFLAGS += -X "main.rudderWriteKey=$(RUDDER_WRITE_KEY_1)"
 LDFLAGS += -X "main.rudderDataplaneURL=$(RUDDER_DATAPLANE_URL)"
 
 export GO111MODULE=on
