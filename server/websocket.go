@@ -34,6 +34,12 @@ const (
 	wsEventError            = "error"
 )
 
+const (
+	emoji = "telephone_receiver"
+	text  = "On a call"
+	setBy = "calls"
+)
+
 func (p *Plugin) handleClientMessageTypeScreen(us *session, msg clientMessage, handlerID string) error {
 	data := map[string]string{}
 	if msg.Type == clientMessageTypeScreenOn {
@@ -381,7 +387,11 @@ func (p *Plugin) handleJoin(userID, connID, channelID, title string) error {
 			"owner_id":  state.Call.OwnerID,
 		}, &model.WebsocketBroadcast{ChannelId: channelID, ReliableClusterSend: true})
 	}
-
+	// set user status
+	appErr = p.API.SetUserStatusOnCallJoin(userID, emoji, text, setBy)
+	if err != nil {
+		return fmt.Errorf(appErr.Message)
+	}
 	// send successful join response
 	p.metrics.IncWebSocketEvent("out", "join")
 	p.API.PublishWebSocketEvent(wsEventJoin, map[string]interface{}{
@@ -474,6 +484,10 @@ func (p *Plugin) handleJoin(userID, connID, channelID, title string) error {
 
 	wg.Wait()
 
+	appErr = p.API.SetUserStatusOnCallLeave(userID, emoji, text, setBy)
+	if err != nil {
+		return fmt.Errorf(appErr.Message)
+	}
 	p.API.PublishWebSocketEvent(wsEventUserDisconnected, map[string]interface{}{
 		"userID": userID,
 	}, &model.WebsocketBroadcast{ChannelId: channelID, ReliableClusterSend: true})
