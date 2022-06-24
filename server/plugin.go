@@ -292,3 +292,72 @@ func (p *Plugin) updateCallThreadEnded(threadID string) (float64, error) {
 
 	return dur, nil
 }
+
+func (p *Plugin) setUserStatusOnCallJoin(userID string) {
+	// get user status
+	userStatus, appErr := p.API.GetUserStatus(userID)
+	if appErr != nil {
+		p.LogError("failed to get user status. status not set to dnd userid=%s", userID)
+		return
+	}
+
+	// check if user not online, do nothing to user status
+	if userStatus.Status != model.StatusOnline {
+		p.LogDebug("user status isn't online, status not set to dnd userid=%s", userID)
+		return
+	}
+
+	// set status
+	_, err := p.API.UpdateUserStatus(userID, model.StatusDnd)
+	if err != nil {
+		p.LogError("failed to set user status to dnd userid=%s", userID)
+		return
+	}
+
+	// set custom status
+	customStatus := &model.CustomStatus{
+		Emoji:    "telephone_receiver",
+		Text:     "On a call",
+		Duration: "",
+	}
+	err = p.API.UpdateUserCustomStatus(userID, customStatus)
+	if err != nil {
+		p.LogError("failed to set user status to dnd userid=%s", userID)
+		return
+	}
+}
+
+func (p *Plugin) setUserStatusOnCallLeave(userID string) {
+	// get user's custom status
+	user, appErr := p.API.GetUser(userID)
+
+	userStatus := user.GetCustomStatus()
+	if appErr != nil {
+		p.LogError("failed to get custom user status. status not set to online userid=%s", userID)
+		return
+	}
+
+	fmt.Println("call is ending bro what are you doing", userStatus.Text, userStatus.Emoji)
+	// check if user not online, do nothing to user status
+	if userStatus.Text != "On a call" || userStatus.Emoji != "telephone_receiver" {
+		p.LogDebug("custom status is not set by calls, status not set to online userid=%s", userID)
+		return
+	}
+
+	// set status
+	_, err := p.API.UpdateUserStatus(userID, model.StatusOnline)
+
+	fmt.Println("call is ending bro what are you doing")
+	if err != nil {
+		p.LogError("failed to set user status to online userid=%s", userID)
+		return
+	}
+
+	// remove custom status
+	// TODO: restore old status
+	err = p.API.RemoveUserCustomStatus(userID)
+	if err != nil {
+		p.LogError("failed to remove user status userid=%s", userID)
+		return
+	}
+}
